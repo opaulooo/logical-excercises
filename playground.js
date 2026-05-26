@@ -8,9 +8,6 @@
   const languageSelect = document.getElementById("language");
   const codeEditorEl = document.getElementById("codeEditor");
   const codeEl = document.getElementById("code");
-  const stdinEl = document.getElementById("stdin");
-  const terminalInputEl = document.getElementById("terminalInput");
-  const sendInputBtn = document.getElementById("sendInputBtn");
   const outputEl = document.getElementById("output");
   const statusEl = document.getElementById("status");
   const runBtn = document.getElementById("runBtn");
@@ -69,7 +66,7 @@
   let workspaceDirHandle = null;
   let lastExecutionSeconds = null;
   let monacoEditor = null;
-  let waitingForInput = false;
+  let editorLoadToken = 0;
 
   function exerciseBaseName() {
     return difficulty + "-" + number;
@@ -225,56 +222,6 @@
     outputEl.textContent = text || "";
   }
 
-  function pushTerminalInputToStdin() {
-    if (!terminalInputEl || !stdinEl) {
-      return;
-    }
-
-    const value = terminalInputEl.value.trim();
-    if (!value) {
-      return;
-    }
-
-    const parts = value
-      .split(";")
-      .map(function (part) {
-        return part.trim();
-      })
-      .filter(function (part) {
-        return part.length > 0;
-      });
-
-    if (parts.length === 0) {
-      return;
-    }
-
-    const payload = parts.join("\n");
-    stdinEl.value = stdinEl.value ? stdinEl.value + "\n" + payload : payload;
-    terminalInputEl.value = "";
-
-    if (waitingForInput) {
-      waitingForInput = false;
-      setStatus("Input recebido. Executando novamente...", false);
-      runCode();
-      return;
-    }
-
-    setStatus("Input enviado para stdin. Clique em Run para executar.", false);
-  }
-
-  function safeParseLogs(text) {
-    if (!text || !text.trim()) {
-      return [];
-    }
-
-    try {
-      const parsed = JSON.parse(text);
-      return Array.isArray(parsed) ? parsed : [];
-    } catch (error) {
-      return [];
-    }
-  }
-
   function getExerciseDescription() {
     return (
       descriptionParam ||
@@ -338,10 +285,49 @@
     }
   }
 
-  function loadEditorForLanguage(lang) {
-    const saved = localStorage.getItem(storageKey(lang));
+  function buildExerciseRelativePath(lang) {
+    const ext = languageExt[lang] || "txt";
+    const folderName = languageFolder[lang] || "misc";
+    const fileName = exerciseBaseName() + "." + ext;
+    return difficulty + "/" + folderName + "/" + fileName;
+  }
+
+  async function fetchSavedCodeFromProject(lang) {
+    const relativePath = buildExerciseRelativePath(lang);
+
+    try {
+      const response = await fetch("/" + relativePath, { cache: "no-store" });
+      if (!response.ok) {
+        return null;
+      }
+
+      return await response.text();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  async function loadEditorForLanguage(lang) {
+    const loadToken = ++editorLoadToken;
     setEditorLanguage(lang);
-    setCodeValue(saved || starters[lang] || "");
+
+    const fileCode = await fetchSavedCodeFromProject(lang);
+    if (loadToken !== editorLoadToken) {
+      return;
+    }
+
+    if (fileCode !== null) {
+      setCodeValue(fileCode);
+      return;
+    }
+
+    const saved = localStorage.getItem(storageKey(lang));
+    if (saved !== null) {
+      setCodeValue(saved);
+      return;
+    }
+
+    setCodeValue(starters[lang] || "");
   }
 
   function openHandleDb() {
@@ -483,29 +469,34 @@
     return "/" + segments.join("/") + "/" + fileName;
   }
 
-  async function readLogsData(interactive) {
-    const rootHandle = await ensureRepoDirHandle(!!interactive);
-    if (!rootHandle) {
-      return null;
+  async function fetchLogs() {
+    try {
+      const response = await fetch("/api/logs");
+      if (!response.ok) {
+        return [];
+      }
+
+      return await response.json();
+    } catch (_) {
+      return [];
     }
-
-    const logsDir = await rootHandle.getDirectoryHandle("logs", {
-      create: true,
-    });
-    const logsFile = await logsDir.getFileHandle("logs.json", { create: true });
-    const logsBlob = await logsFile.getFile();
-    const logsText = await logsBlob.text();
-
-    return {
-      logsFile: logsFile,
-      logs: safeParseLogs(logsText),
-    };
   }
 
-  async function writeLogsData(logsFile, logs) {
-    const writable = await logsFile.createWritable();
-    await writable.write(JSON.stringify(logs, null, 2));
-    await writable.close();
+  async function saveLogs(logs) {
+    const response = await fetch("/api/save", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path: "logs/logs.json", content: JSON.stringify(logs, null, 2) }),
+    });
+
+    if (!response.ok) {
+      throw new Error("logs save endpoint returned status " + response.status);
+    }
+
+    const result = await response.json();
+    if (!result || !result.ok) {
+      throw new Error("Could not write logs/logs.json");
+    }
   }
 
   function downloadFallback(folderParts, fileName, code) {
@@ -602,14 +593,9 @@
 
   async function loadAverageTime() {
     try {
-      const data = await readLogsData(false);
-      if (!data) {
-        renderAverageTime(null);
-        return;
-      }
-
-      renderAverageTime(computeAverageForCurrentExercise(data.logs));
-    } catch (error) {
+      const logs = await fetchLogs();
+      renderAverageTime(computeAverageForCurrentExercise(logs));
+    } catch (_) {
       renderAverageTime(null);
     }
   }
@@ -633,25 +619,23 @@
     };
 
     try {
-      const data = await readLogsData(true);
-      if (!data) {
-        setStatus("Navegador sem suporte para gravar em logs/logs.json.", true);
-        return;
-      }
-
-      data.logs.push(logEntry);
-      await writeLogsData(data.logsFile, data.logs);
-      renderAverageTime(computeAverageForCurrentExercise(data.logs));
+      const logs = await fetchLogs();
+      logs.push(logEntry);
+      await saveLogs(logs);
+      renderAverageTime(computeAverageForCurrentExercise(logs));
       setStatus(
         "Finalizado e gravado em logs/logs.json (" + logEntry.exerciseId + ").",
         false,
       );
     } catch (error) {
-      setStatus("Falha ao gravar logs/logs.json: " + String(error), true);
+      setStatus(
+        "Falha ao gravar logs/logs.json. Certifique-se de estar rodando via servidor local.",
+        true,
+      );
     }
   }
 
-  async function runWithJudge0(lang, sourceCode, stdin) {
+  async function runWithJudge0(lang, sourceCode) {
     const languageId = judge0Lang[lang];
     if (!languageId) {
       throw new Error("Unsupported language for Judge0 execution.");
@@ -667,7 +651,6 @@
         body: JSON.stringify({
           language_id: languageId,
           source_code: sourceCode,
-          stdin: stdin || "",
         }),
       },
     );
@@ -679,111 +662,16 @@
     return response.json();
   }
 
-  function runJavaScriptLocally(sourceCode, stdin) {
-    const captured = [];
-    const originalLog = console.log;
-    const originalError = console.error;
-    const inputLines = String(stdin || "").split(/\r?\n/);
-    let inputIndex = 0;
-
-    function localRequire(moduleName) {
-      if (moduleName !== "readline") {
-        throw new Error('Local JS fallback supports only require("readline").');
-      }
-
-      return {
-        createInterface: function () {
-          return {
-            question: function (promptText, callback) {
-              if (promptText) {
-                captured.push(String(promptText));
-              }
-
-              if (inputIndex >= inputLines.length) {
-                const err = new Error("Input required");
-                err.name = "InputRequiredError";
-                err.prompt = promptText || "Input required";
-                err.partialOutput = captured.join("\n");
-                throw err;
-              }
-
-              const answer = inputLines[inputIndex++];
-              callback(answer);
-            },
-            close: function () {
-              return undefined;
-            },
-          };
-        },
-      };
-    }
-
-    const localProcess = {
-      stdin: {},
-      stdout: {},
-    };
-
-    console.log = function () {
-      captured.push(Array.from(arguments).join(" "));
-    };
-
-    console.error = function () {
-      captured.push(Array.from(arguments).join(" "));
-    };
-
-    try {
-      const runner = new Function("stdin", "require", "process", sourceCode);
-      const result = runner(stdin || "", localRequire, localProcess);
-      if (typeof result !== "undefined") {
-        captured.push(String(result));
-      }
-    } finally {
-      console.log = originalLog;
-      console.error = originalError;
-    }
-
-    return captured.join("\n") || "(no output)";
-  }
-
   async function runCode() {
     const lang = languageSelect.value;
     const sourceCode = getCodeValue();
-    const stdin = stdinEl.value;
 
     setStatus("Running...", false);
     setOutput("");
     lastExecutionSeconds = null;
-    waitingForInput = false;
-
-    if (lang === "javascript") {
-      try {
-        const start = performance.now();
-        const localOutput = runJavaScriptLocally(sourceCode, stdin);
-        const end = performance.now();
-        lastExecutionSeconds = (end - start) / 1000;
-        setOutput(localOutput);
-        setStatus("Executed locally in browser (JavaScript).", false);
-        return;
-      } catch (localError) {
-        if (localError && localError.name === "InputRequiredError") {
-          waitingForInput = true;
-          setOutput(localError.partialOutput || localError.prompt || "Input required");
-          setStatus(
-            "Programa aguardando stdin. Digite no terminal e pressione Send.",
-            false,
-          );
-          return;
-        }
-
-        lastExecutionSeconds = null;
-        setOutput(String(localError));
-        setStatus("Execution failed.", true);
-        return;
-      }
-    }
 
     try {
-      const result = await runWithJudge0(lang, sourceCode, stdin);
+      const result = await runWithJudge0(lang, sourceCode);
       const output =
         result.stdout ||
         result.stderr ||
@@ -825,21 +713,6 @@
     setOutput("");
     setStatus("Output cleared.", false);
   });
-
-  if (sendInputBtn) {
-    sendInputBtn.addEventListener("click", pushTerminalInputToStdin);
-  }
-
-  if (terminalInputEl) {
-    terminalInputEl.addEventListener("keydown", function (event) {
-      if (event.key !== "Enter") {
-        return;
-      }
-
-      event.preventDefault();
-      pushTerminalInputToStdin();
-    });
-  }
 
   document.addEventListener("keydown", function (event) {
     if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== "s") {

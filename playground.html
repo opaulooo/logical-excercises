@@ -20,31 +20,12 @@
         <section class="panel">
           <div class="controls">
             <div class="row">
-              <div>
-                <label for="language">Language</label>
-                <select id="language">
-                  <option value="javascript">JavaScript</option>
-                  <option value="python">Python</option>
-                  <option value="csharp">C#</option>
-                </select>
-              </div>
-              <div>
-                <label for="stdin" class="label-with-help">
-                  <span>Input (stdin)</span>
-                  <span
-                    class="help-dot"
-                    tabindex="0"
-                    aria-label="Use o terminal abaixo para enviar entrada. Se digitar com ponto e virgula (;), os valores sao enviados em sequencia de linhas para o stdin."
-                    data-tooltip="Use o terminal abaixo para enviar entrada. Se digitar com ';', os valores sao enviados em sequencia para o stdin."
-                    >i</span
-                  >
-                </label>
-                <input
-                  id="stdin"
-                  type="text"
-                  placeholder="Optional input for your program"
-                />
-              </div>
+              <label for="language">Language</label>
+              <select id="language">
+                <option value="javascript">JavaScript</option>
+                <option value="python">Python</option>
+                <option value="csharp">C#</option>
+              </select>
             </div>
           </div>
 
@@ -70,8 +51,7 @@
           </div>
 
           <p class="hint">
-            Run uses Judge0 API for JavaScript, Python and C#. If unavailable,
-            JavaScript falls back to local execution.
+            Run uses Judge0 API for JavaScript, Python and C#.
           </p>
         </section>
 

@@ -31,6 +31,28 @@ function safeJoin(root, requestedPath) {
   return full;
 }
 
+function handleGetLogs(req, res) {
+  const target = safeJoin(ROOT, 'logs/logs.json');
+  if (!target) {
+    sendJson(res, 400, { ok: false, error: 'Invalid path' });
+    return;
+  }
+
+  fs.readFile(target, 'utf8', (err, data) => {
+    if (err) {
+      sendJson(res, 200, []);
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(data || '[]');
+      sendJson(res, 200, Array.isArray(parsed) ? parsed : []);
+    } catch (_) {
+      sendJson(res, 200, []);
+    }
+  });
+}
+
 function handleSave(req, res) {
   let raw = '';
   req.on('data', (chunk) => {
@@ -86,6 +108,11 @@ function serveStatic(req, res) {
 }
 
 const server = http.createServer((req, res) => {
+  if (req.method === 'GET' && req.url === '/api/logs') {
+    handleGetLogs(req, res);
+    return;
+  }
+
   if (req.method === 'POST' && req.url === '/api/save') {
     handleSave(req, res);
     return;
