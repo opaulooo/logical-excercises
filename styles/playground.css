@@ -256,32 +256,8 @@ button:hover {
   width: auto;
 }
 
-.terminal-input-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 8px 0 6px;
-}
-
-.terminal-prompt {
-  font-family: "Cascadia Mono", Consolas, Monaco, monospace;
-  color: #7fb18f;
-  font-weight: 700;
-}
-
-.terminal-input-row input {
-  flex: 1;
-  min-width: 0;
-  font-family: "Cascadia Mono", Consolas, Monaco, monospace;
-}
-
-.terminal-input-row button {
-  width: auto;
-  white-space: nowrap;
-}
-
 .output {
-  min-height: 560px;
+  min-height: 555px;
   background: linear-gradient(160deg, #101822 0%, #0e1520 100%);
   color: var(--output-text);
   border: 1px solid #1f2b3a;
