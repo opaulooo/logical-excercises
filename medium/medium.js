@@ -72,7 +72,7 @@
         });
 
         modalExample.textContent = examplesByTitle[title] || 'No strict input/output example is required. Describe assumptions and provide at least one valid test case.';
-        openExerciseBtn.href = '../playground.html?difficulty=' + encodeURIComponent(difficulty.toLowerCase()) + '&number=' + encodeURIComponent(number) + '&title=' + encodeURIComponent(title) + '&description=' + encodeURIComponent(description);
+        openExerciseBtn.href = '../playground/playground.html?difficulty=' + encodeURIComponent(difficulty.toLowerCase()) + '&number=' + encodeURIComponent(number) + '&title=' + encodeURIComponent(title) + '&description=' + encodeURIComponent(description);
         modalBackdrop.classList.add('open');
         modalBackdrop.setAttribute('aria-hidden', 'false');
       }

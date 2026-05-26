@@ -77,7 +77,7 @@
         modalExampleTitle.style.display = 'block';
         modalExample.style.display = 'block';
 
-        openExerciseBtn.href = '../playground.html?difficulty=' + encodeURIComponent(difficulty.toLowerCase()) + '&number=' + encodeURIComponent(number) + '&title=' + encodeURIComponent(title) + '&description=' + encodeURIComponent(description);
+        openExerciseBtn.href = '../playground/playground.html?difficulty=' + encodeURIComponent(difficulty.toLowerCase()) + '&number=' + encodeURIComponent(number) + '&title=' + encodeURIComponent(title) + '&description=' + encodeURIComponent(description);
 
         modalBackdrop.classList.add('open');
         modalBackdrop.setAttribute('aria-hidden', 'false');

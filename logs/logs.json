@@ -7,5 +7,13 @@
     "executionSeconds": 0.022,
     "code": "const array = [1, 2, 3, 4, 5];\nconst target = 4;\nconst response = [];\nconst values = [];\n\nfor (let i = 0; i < array.length; i++) {\n  for (let j = 0; j < array.length; j++) {\n    if (array[i] + array[j] === target) {\n      response.push(i + \"+\" + j);\n      values.push(array[i] + \"+\" + array[j]);\n    }\n  }\n}\n\nconsole.log(\"==========================\");\nconsole.log(\"Array: \", array);\nconsole.log(\"Target: \", target);\nconsole.log(\"Posicoes:\", response);\nconsole.log(\"Valores:\", values);\nconsole.log(\"==========================\");\n\n",
     "stdin": ""
+  },
+  {
+    "exerciseId": "easy-01",
+    "difficulty": "easy",
+    "number": "01",
+    "date": "2026-05-26T01:22:52.577Z",
+    "executionSeconds": 0.023,
+    "code": "const array = [1, 2, 3, 4, 5];\nconst target = 4;\nconst response = [];\nconst values = [];\n\nfor (let i = 0; i < array.length; i++) {\n  for (let j = 0; j < array.length; j++) {\n    if (array[i] + array[j] === target) {\n      response.push(i + \"+\" + j);\n      values.push(array[i] + \"+\" + array[j]);\n    }\n  }\n}\n\nconsole.log(\"==========================\");\nconsole.log(\"Array: \", array);\nconsole.log(\"Target: \", target);\nconsole.log(\"Posicoes:\", response);\nconsole.log(\"Valores:\", values);\nconsole.log(\"==========================\");\n\n"
   }
 ]
