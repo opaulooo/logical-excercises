@@ -23,8 +23,7 @@ body {
   color: var(--text);
   background:
     radial-gradient(circle at 15% 0%, #dce8e0 0%, transparent 35%),
-    radial-gradient(circle at 90% 10%, #efe7da 0%, transparent 32%),
-    var(--bg);
+    radial-gradient(circle at 90% 10%, #efe7da 0%, transparent 32%), var(--bg);
 }
 
 .container {
@@ -89,6 +88,54 @@ label {
   margin-bottom: 6px;
 }
 
+.label-with-help {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.help-dot {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 17px;
+  height: 17px;
+  border-radius: 999px;
+  background: #dce5df;
+  color: #1f3d30;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: default;
+  user-select: none;
+}
+
+.help-dot::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 8px);
+  transform: translateX(-50%);
+  width: min(320px, 85vw);
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #1b2b24;
+  color: #f3fbf7;
+  font-size: 0.8rem;
+  font-weight: 500;
+  line-height: 1.35;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+  z-index: 10;
+}
+
+.help-dot:hover::after,
+.help-dot:focus-visible::after {
+  opacity: 1;
+}
+
 select,
 textarea,
 input,
@@ -98,7 +145,10 @@ button {
   border-radius: 10px;
   padding: 10px 12px;
   font: inherit;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
 }
 
 select,
@@ -113,6 +163,19 @@ textarea {
   font-family: "Cascadia Mono", Consolas, Monaco, monospace;
   font-size: 0.95rem;
   line-height: 1.55;
+}
+
+#codeEditor {
+  display: none;
+  min-height: 480px;
+  border: 1px solid var(--outline);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 2px;
+}
+
+.code-fallback {
+  display: block;
 }
 
 select:focus,
@@ -164,8 +227,61 @@ button:hover {
   line-height: 1.45;
 }
 
+.avg-time {
+  margin: 6px 0 10px;
+  font-size: 0.95rem;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.output-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.output-header label {
+  margin: 0;
+}
+
+.output-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.output-actions button {
+  width: auto;
+}
+
+.terminal-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 6px;
+}
+
+.terminal-prompt {
+  font-family: "Cascadia Mono", Consolas, Monaco, monospace;
+  color: #7fb18f;
+  font-weight: 700;
+}
+
+.terminal-input-row input {
+  flex: 1;
+  min-width: 0;
+  font-family: "Cascadia Mono", Consolas, Monaco, monospace;
+}
+
+.terminal-input-row button {
+  width: auto;
+  white-space: nowrap;
+}
+
 .output {
-  min-height: 420px;
+  min-height: 560px;
   background: linear-gradient(160deg, #101822 0%, #0e1520 100%);
   color: var(--output-text);
   border: 1px solid #1f2b3a;
@@ -206,7 +322,7 @@ a:hover {
   }
 
   .output {
-    min-height: 220px;
+    min-height: 320px;
   }
 }
 
@@ -228,4 +344,13 @@ a:hover {
   textarea {
     min-height: 280px;
   }
+
+  .terminal-input-row {
+    flex-wrap: wrap;
+  }
+}
+
+.action-run {
+  display: flex;
+  justify-content: flex-end;
 }
